@@ -1,0 +1,17 @@
+node_modules/
+.next/
+dist/
+.env
+artifacts/
+*.tsbuildinfo
+test-results/
+playwright-report/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+apps/web/tests/
+apps/web/playwright.config.ts
+apps/web/AGENTS.md
+.agents
+docs
