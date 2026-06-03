@@ -1,0 +1,6 @@
+.agents/
+node_modules/
+.next/
+test-results/
+pnpm-lock.yaml
+artifacts/
