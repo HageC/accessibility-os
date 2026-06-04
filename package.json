@@ -1,0 +1,29 @@
+{
+  "name": "accessibility-os",
+  "private": true,
+  "packageManager": "pnpm@10.21.0",
+  "scripts": {
+    "dev": "concurrently -k -n web,api,worker \"corepack pnpm --filter @aos/web dev\" \"corepack pnpm --filter @aos/api dev\" \"corepack pnpm --filter @aos/worker dev\"",
+    "typecheck": "corepack pnpm -r typecheck",
+    "test": "corepack pnpm -r test",
+    "build": "corepack pnpm -r build",
+    "lint": "eslint apps packages",
+    "format:check": "prettier --check apps packages *.json *.yaml *.md",
+    "db:migrate": "corepack pnpm --filter @aos/database migrate",
+    "db:seed": "corepack pnpm --filter @aos/database seed",
+    "browser:install": "corepack pnpm --filter @aos/scanner exec playwright install chromium",
+    "scan:ci": "corepack pnpm --filter @aos/cli aos",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "concurrently": "^9.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}
