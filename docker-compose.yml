@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: accessibility
+      POSTGRES_USER: accessibility
+      POSTGRES_PASSWORD: accessibility
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U accessibility -d accessibility"]
+      interval: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:6379:6379"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://accessibility:accessibility@postgres:5432/accessibility
+      SCAN_ALLOWED_ORIGIN: http://web:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+  web:
+    build:
+      context: .
+      target: web
+    ports: ["127.0.0.1:3000:3000"]
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      DATABASE_URL: postgresql://accessibility:accessibility@postgres:5432/accessibility
+      REDIS_URL: redis://redis:6379
+      API_HOST: 0.0.0.0
+      WEB_ORIGIN: http://localhost:3000
+      SCAN_ALLOWED_ORIGIN: http://web:3000
+      ARTIFACT_DIR: ./artifacts
+    ports: ["127.0.0.1:4000:4000"]
+    volumes: ["artifacts:/app/artifacts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      DATABASE_URL: postgresql://accessibility:accessibility@postgres:5432/accessibility
+      REDIS_URL: redis://redis:6379
+      SCAN_ALLOWED_ORIGIN: http://web:3000
+      ARTIFACT_DIR: ./artifacts
+      AOS_JOURNEY_USERNAME: ${AOS_JOURNEY_USERNAME:-}
+      AOS_JOURNEY_PASSWORD: ${AOS_JOURNEY_PASSWORD:-}
+    volumes: ["artifacts:/app/artifacts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  redis_data:
+  artifacts:
