@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMED_OUT
+}
+
+model Project {
+  id        String          @id @default(uuid())
+  name      String
+  url       String
+  createdAt DateTime        @default(now())
+  scans     Scan[]
+  journeys  Journey[]
+  session   ProjectSession?
+}
+
+model ProjectSession {
+  projectId  String   @id
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ciphertext String
+  updatedAt  DateTime @updatedAt
+}
+
+model Scan {
+  id                String             @id @default(uuid())
+  projectId         String
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status            ScanStatus         @default(QUEUED)
+  targetUrl         String
+  createdAt         DateTime           @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+  failureCode       String?
+  failureText       String?
+  pages             ScanPage[]
+  artifacts         Artifact[]
+  focusObservations FocusObservation[]
+
+  @@index([projectId, createdAt])
+}
+
+model ScanPage {
+  id        String     @id @default(uuid())
+  scanId    String
+  scan      Scan       @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  url       String
+  title     String?
+  findings  Finding[]
+  artifacts Artifact[]
+
+  @@index([scanId])
+}
+
+model Finding {
+  id             String   @id @default(uuid())
+  pageId         String
+  page           ScanPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  fingerprint    String
+  ruleId         String
+  impact         String?
+  description    String
+  help           String
+  helpUrl        String
+  target         Json
+  html           String
+  failureSummary String?
+  tags           Json
+  wcag           Json
+  createdAt      DateTime @default(now())
+
+  @@index([pageId, impact])
+  @@index([fingerprint])
+}
+
+model Artifact {
+  id         String    @id @default(uuid())
+  scanId     String
+  scan       Scan      @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  pageId     String?
+  page       ScanPage? @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  kind       String
+  mimeType   String
+  storageKey String    @unique
+  createdAt  DateTime  @default(now())
+
+  @@index([scanId])
+  @@index([pageId])
+}
+
+model FocusObservation {
+  id          String   @id @default(uuid())
+  scanId      String
+  scan        Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  sequence    Int
+  direction   String
+  pageUrl     String
+  selector    String?
+  tagName     String?
+  role        String?
+  name        String?
+  elementId   String?
+  elementText String?
+  isBody      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([scanId, sequence])
+  @@index([scanId, sequence])
+}
+
+model Journey {
+  id        String       @id @default(uuid())
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  spec      Json
+  createdAt DateTime     @default(now())
+  runs      JourneyRun[]
+
+  @@index([projectId, createdAt])
+}
+
+model JourneyRun {
+  id            String              @id @default(uuid())
+  journeyId     String
+  journey       Journey             @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  status        ScanStatus          @default(QUEUED)
+  outcome       String?
+  createdAt     DateTime            @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  failureCode   String?
+  failureText   String?
+  screenshotKey String?
+  stepResults   JourneyStepResult[]
+
+  @@index([journeyId, createdAt])
+}
+
+model JourneyStepResult {
+  id            String     @id @default(uuid())
+  runId         String
+  run           JourneyRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  sequence      Int
+  action        String
+  startedAt     DateTime
+  completedAt   DateTime
+  outcome       String
+  expected      String?
+  observed      String?
+  failure       String?
+  screenshotKey String?
+  auditFindings Json?
+
+  @@unique([runId, sequence])
+}
