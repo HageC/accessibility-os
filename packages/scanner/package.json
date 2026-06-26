@@ -1,0 +1,19 @@
+{
+  "name": "@aos/scanner",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@aos/shared": "workspace:*",
+    "playwright": "^1.56.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
