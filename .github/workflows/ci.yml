@@ -1,0 +1,24 @@
+name: Build app
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.21.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check && pnpm lint && pnpm typecheck && pnpm build
+      - run: docker compose up -d --build
+      - run: |
+          for attempt in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:4000/api/v1/health >/dev/null && curl -fsS http://127.0.0.1:3000 >/dev/null && exit 0
+            sleep 2
+          done
+          docker compose logs api web worker
+          exit 1
